@@ -132,9 +132,9 @@ jobs:
           echo "Versión detectada: $VERSION"
 
       # ============================================================
-      # 5. Compilar con Maven y ProGuard
+      # 5. Compilar con Maven
       # ============================================================
-      - name: Compilar con Maven y ProGuard
+      - name: Compilar con Maven
         run: |
           set -e
 
