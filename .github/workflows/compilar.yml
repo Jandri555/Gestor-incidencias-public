@@ -1,0 +1,378 @@
+name: Construir AppImage para Linux
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-24.04
+
+    steps:
+      # ============================================================
+      # 1. Descargar el código
+      # ============================================================
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      # ============================================================
+      # 2. Configurar Java 25 CON JMODS
+      # ============================================================
+      - name: Configurar Java 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: "25"
+          distribution: "temurin"
+          java-package: "jdk"
+          cache: maven
+
+      # ============================================================
+      # 2b. Descargar JMODs de Temurin por separado (JEP 493)
+      #     Desde JDK 24+, Eclipse Temurin ya no incluye la carpeta
+      #     "jmods" en la descarga estándar del JDK para reducir su
+      #     tamaño. Como jlink los necesita (--add-modules más abajo),
+      #     hay que descargarlos aparte desde la API de Adoptium.
+      #     https://adoptium.net/news/2025/09/eclipse-temurin-25-available
+      # ============================================================
+      - name: Descargar JMODs de Temurin (JEP 493)
+        run: |
+          set -e
+
+          echo "Descargando JMODs de Eclipse Temurin 25 (linux/x64)..."
+
+          curl -fL -o jmods.archive \
+            "https://api.adoptium.net/v3/binary/latest/25/ga/linux/x64/jmods/hotspot/normal/eclipse"
+
+          echo "Inspeccionando el formato del archivo descargado..."
+          file jmods.archive
+
+          echo "Extrayendo a una carpeta temporal..."
+          mkdir -p jmods_tmp
+          if file jmods.archive | grep -qi 'Zip archive'; then
+            unzip -q jmods.archive -d jmods_tmp
+          else
+            tar -xzf jmods.archive -C jmods_tmp
+          fi
+
+          echo "Buscando los archivos .jmod dentro de lo extraído..."
+          JMODS_SRC_DIR=$(dirname "$(find jmods_tmp -name 'java.base.jmod' | head -n1)")
+
+          if [ -z "$JMODS_SRC_DIR" ] || [ ! -d "$JMODS_SRC_DIR" ]; then
+            echo "ERROR: no se ha encontrado java.base.jmod dentro del archivo descargado."
+            echo "Contenido extraído:"
+            find jmods_tmp -maxdepth 4
+            exit 1
+          fi
+
+          echo "Encontrados los .jmod en: $JMODS_SRC_DIR"
+          mkdir -p "$JAVA_HOME/jmods"
+          cp "$JMODS_SRC_DIR"/*.jmod "$JAVA_HOME/jmods/"
+
+          rm -rf jmods_tmp jmods.archive
+
+          echo ""
+          echo "JMODs instalados:"
+          ls -lh "$JAVA_HOME/jmods" | head -n 5
+
+      # ============================================================
+      # 3. Comprobar herramientas
+      # ============================================================
+      - name: Comprobar Java, Maven y JMOD
+        run: |
+          set -e
+
+          echo "=== Java ==="
+          java --version
+
+          echo ""
+          echo "=== Javac ==="
+          javac --version
+
+          echo ""
+          echo "=== Maven ==="
+          mvn --version
+
+          echo ""
+          echo "=== jlink ==="
+          jlink --version
+
+          echo ""
+          echo "=== jdeps ==="
+          jdeps --version
+
+          echo ""
+          echo "=== JAVA_HOME ==="
+          echo "$JAVA_HOME"
+
+          echo ""
+          echo "=== Comprobando JMOD ==="
+          ls -lh "$JAVA_HOME/jmods/java.base.jmod"
+          ls -lh "$JAVA_HOME/jmods/java.desktop.jmod"
+          ls -lh "$JAVA_HOME/jmods/java.naming.jmod"
+          ls -lh "$JAVA_HOME/jmods/java.logging.jmod"
+
+      # ============================================================
+      # 4. Obtener versión desde Version.java
+      # ============================================================
+      - name: Obtener versión
+        run: |
+          set -e
+
+          VERSION=$(sed -n 's/.*NUMERO = "\([^"]*\)".*/\1/p' \
+            src/main/java/com/incidencias/Version.java)
+
+          if [ -z "$VERSION" ]; then
+            echo "ERROR: No se ha podido obtener la versión desde Version.java"
+            exit 1
+          fi
+
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+          echo "Versión detectada: $VERSION"
+
+      # ============================================================
+      # 5. Compilar con Maven y ProGuard
+      # ============================================================
+      - name: Compilar con Maven y ProGuard
+        run: |
+          set -e
+
+          mvn clean package
+
+      # ============================================================
+      # 6. Comprobar JAR generado
+      # ============================================================
+      - name: Comprobar JAR
+        run: |
+          set -e
+
+          JAR="target/Incidencia_${VERSION}.jar"
+
+          echo "Buscando:"
+          echo "$JAR"
+
+          if [ ! -f "$JAR" ]; then
+            echo "ERROR: No se ha generado el JAR esperado."
+            echo ""
+            echo "Contenido de target:"
+            ls -lah target/
+            exit 1
+          fi
+
+          echo ""
+          echo "JAR encontrado:"
+          ls -lh "$JAR"
+
+      # ============================================================
+      # 7. Crear JRE incluido en el AppImage
+      # ============================================================
+      - name: Crear JRE incluido en el AppImage
+        run: |
+          set -e
+
+          echo "Creando JRE mínimo de Java 25..."
+
+          mkdir -p Incidencias.AppDir/usr/lib/jvm
+
+          JAR="target/Incidencia_${VERSION}.jar"
+
+          if [ ! -f "$JAR" ]; then
+            echo "ERROR: No existe $JAR"
+            exit 1
+          fi
+
+          # ----------------------------------------------------------
+          # Detectar módulos utilizados (filtrando posibles warnings)
+          # ----------------------------------------------------------
+          MODULES=$(jdeps \
+            --ignore-missing-deps \
+            --multi-release 25 \
+            --print-module-deps \
+            "$JAR" 2>/dev/null | grep -E '^[a-zA-Z0-9.,_]+$' | tail -n 1 || true)
+
+          echo ""
+          echo "Módulos detectados por jdeps:"
+          echo "$MODULES"
+
+          # ----------------------------------------------------------
+          # Añadir módulos de Swing, TLS/HTTPS (jdk.crypto.ec),
+          # servidor local OAuth (jdk.httpserver) y JNA/Gson (jdk.unsupported)
+          # ----------------------------------------------------------
+          REQUIRED_MODULES="java.base,java.desktop,java.logging,java.naming,java.sql,java.xml,java.management,jdk.crypto.ec,jdk.httpserver,jdk.unsupported"
+
+          if [ -n "$MODULES" ]; then
+            MODULES="$MODULES,$REQUIRED_MODULES"
+          else
+            MODULES="$REQUIRED_MODULES"
+          fi
+
+          # ----------------------------------------------------------
+          # Eliminar módulos duplicados
+          # ----------------------------------------------------------
+          MODULES=$(echo "$MODULES" \
+            | tr ',' '\n' \
+            | sort -u \
+            | paste -sd ',' -)
+
+          echo ""
+          echo "Módulos que se incluirán:"
+          echo "$MODULES"
+          echo ""
+
+          # ----------------------------------------------------------
+          # Crear JRE
+          # ----------------------------------------------------------
+          jlink \
+            --add-modules "$MODULES" \
+            --strip-debug \
+            --no-man-pages \
+            --no-header-files \
+            --compress=zip-6 \
+            --output Incidencias.AppDir/usr/lib/jvm/java
+
+          echo ""
+          echo "JRE creado:"
+          du -sh Incidencias.AppDir/usr/lib/jvm/java
+
+      # ============================================================
+      # 8. Preparar estructura del AppImage
+      # ============================================================
+      - name: Preparar AppDir
+        run: |
+          set -e
+
+          echo "Preparando AppDir..."
+
+          mkdir -p Incidencias.AppDir/usr/bin
+
+          JAR="Incidencia_${VERSION}.jar"
+
+          # ----------------------------------------------------------
+          # Copiar JAR
+          # ----------------------------------------------------------
+          cp "target/$JAR" \
+             "Incidencias.AppDir/$JAR"
+
+          # ----------------------------------------------------------
+          # Copiar icono
+          # ----------------------------------------------------------
+          cp src/main/resources/icon.png \
+             Incidencias.AppDir/icon.png
+
+          # ----------------------------------------------------------
+          # Crear lanzador
+          # ----------------------------------------------------------
+          cat <<EOF > Incidencias.AppDir/usr/bin/incidencias
+          #!/bin/bash
+
+          HERE="\$(dirname "\$(readlink -f "\$0")")"
+
+          JAVA="\$HERE/../lib/jvm/java/bin/java"
+
+          exec "\$JAVA" \
+            -jar "\$HERE/../../$JAR" \
+            "\$@"
+          EOF
+
+          chmod +x Incidencias.AppDir/usr/bin/incidencias
+
+          # ----------------------------------------------------------
+          # Crear .desktop
+          # ----------------------------------------------------------
+          cat <<'EOF' > Incidencias.AppDir/incidencias.desktop
+          [Desktop Entry]
+          Version=1.0
+          Type=Application
+          Name=Registro de Incidencias
+          Comment=Gestor de incidencias del IES Teis
+          Exec=incidencias
+          Icon=icon
+          Terminal=false
+          Categories=Utility;
+          EOF
+
+          # ----------------------------------------------------------
+          # Crear AppRun
+          # ----------------------------------------------------------
+          cat <<'EOF' > Incidencias.AppDir/AppRun
+          #!/bin/bash
+
+          HERE="$(dirname "$(readlink -f "${0}")")"
+
+          exec "$HERE/usr/bin/incidencias" "$@"
+          EOF
+
+          chmod +x Incidencias.AppDir/AppRun
+
+          echo ""
+          echo "=== Contenido del AppDir ==="
+          find Incidencias.AppDir -maxdepth 6 -type f -print
+
+      # ============================================================
+      # 9. Instalar dependencias de AppImage
+      # ============================================================
+      - name: Instalar dependencias de Linux para AppImage
+        run: |
+          set -e
+
+          sudo apt-get update
+          sudo apt-get install -y libfuse2t64 file
+
+      # ============================================================
+      # 10. Crear AppImage
+      # ============================================================
+      - name: Empaquetar el AppImage
+        run: |
+          set -e
+
+          NOMBRE_APPIMAGE="Incidencia_${VERSION}.AppImage"
+
+          echo "AppImage de salida:"
+          echo "$NOMBRE_APPIMAGE"
+
+          wget -O appimagetool-x86_64.AppImage \
+            https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+
+          chmod +x appimagetool-x86_64.AppImage
+
+          unset SOURCE_DATE_EPOCH
+
+          ARCH=x86_64 ./appimagetool-x86_64.AppImage \
+            --appimage-extract-and-run \
+            Incidencias.AppDir \
+            "$NOMBRE_APPIMAGE"
+
+          echo ""
+          echo "=== AppImage creado ==="
+          ls -lh "$NOMBRE_APPIMAGE"
+
+      # ============================================================
+      # 11. Comprobar que el AppImage existe
+      # ============================================================
+      - name: Validar AppImage
+        run: |
+          set -e
+
+          NOMBRE_APPIMAGE="Incidencia_${VERSION}.AppImage"
+
+          if [ ! -f "$NOMBRE_APPIMAGE" ]; then
+            echo "ERROR: No se ha generado el AppImage."
+            exit 1
+          fi
+
+          chmod +x "$NOMBRE_APPIMAGE"
+
+          echo "AppImage válido:"
+          file "$NOMBRE_APPIMAGE"
+          ls -lh "$NOMBRE_APPIMAGE"
+
+      # ============================================================
+      # 12. Subir AppImage a GitHub
+      # ============================================================
+      - name: Subir el AppImage a GitHub
+        uses: actions/upload-artifact@v7
+        with:
+          name: Incidencias-Linux-AppImage
+          path: Incidencia_*.AppImage
+          if-no-files-found: error

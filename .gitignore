@@ -1,0 +1,10 @@
+.env
+*.env
+Config.json
+debug_incidencias.log
+historial_incidencias.sql
+target/
+.idea/
+.vscode/
+*.iml
+tokens_google_tmp/
