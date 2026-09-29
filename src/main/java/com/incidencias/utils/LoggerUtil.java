@@ -41,7 +41,7 @@ public class LoggerUtil {
         errOriginal = System.err;
 
         Runnable crearUI = () -> {
-            ventanaConsola = new JFrame("Consola de Depuración Exhaustiva - v" + Version.NUMERO + " [MODO DEBUG]");
+            ventanaConsola = new JFrame(Version.NOMBRE + " - v" + Version.NUMERO + " - Consola de Depuración [MODO DEBUG]");
             ventanaConsola.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
             ventanaConsola.setSize(860, 650);
             ventanaConsola.setAutoRequestFocus(false);
@@ -153,7 +153,7 @@ public class LoggerUtil {
         long freeMb = rt.freeMemory() / (1024 * 1024);
 
         log("BOOT", "==================================================================");
-        log("BOOT", " INICIANDO CONSOLA DE DEPURACIÓN EXHAUSTIVA - INCIDENCIAS v" + Version.NUMERO);
+        log("BOOT", " INICIANDO " + Version.NOMBRE + " v" + Version.NUMERO + " - CONSOLA DE DEPURACIÓN EXHAUSTIVA");
         log("BOOT", "==================================================================");
         log("ENV", "Sistema Operativo : " + System.getProperty("os.name") + " (" + System.getProperty("os.version")
                 + ") [" + System.getProperty("os.arch") + "]");
