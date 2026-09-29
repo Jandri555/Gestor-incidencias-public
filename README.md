@@ -76,7 +76,7 @@ Ver `.env.example`.
 
 ## Historial de incidencias
 
-Cada incidencia enviada se registra en `historial_incidencias.sql` (carpeta de datos de la aplicación: `%APPDATA%\Incidencias` en Windows, `~/.config/Incidencias` en Linux). Es un script SQL con una tabla `incidencias` y un `INSERT` por registro, con los campos: `fecha`, `hora`, `curso`, `taller`, `equipo`, `alumno`, `profesor`, `problema` y `destinatario`.
+Cada incidencia enviada se registra en `historial_incidencias.sql` (carpeta de datos de la aplicación: `%APPDATA%\Incidencias_OS` en Windows, `~/.config/Incidencias_OS` en Linux). Es un script SQL con una tabla `incidencias` y un `INSERT` por registro, con los campos: `fecha`, `hora`, `curso`, `taller`, `equipo`, `alumno`, `profesor`, `problema` y `destinatario`.
 
 ## Actualizaciones
 
