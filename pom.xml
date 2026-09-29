@@ -352,6 +352,12 @@
                                     destfile="${project.build.directory}/${project.build.finalName}-deb-jar-with-dependencies.jar"
                                     basedir="${project.build.directory}/debug-classes"
                                     update="true" />
+
+                                <!-- Conservar una versión debug final sin ProGuard. -->
+                                <copy
+                                    file="${project.build.directory}/${project.build.finalName}-deb-jar-with-dependencies.jar"
+                                    tofile="${project.build.directory}/Incidencia_${app.version}_deb.jar"
+                                    overwrite="true" />
                             </target>
                         </configuration>
                     </execution>
