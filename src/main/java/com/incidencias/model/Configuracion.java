@@ -12,7 +12,7 @@ import java.util.Properties;
 
 public class Configuracion {
 
-    private static final String NOMBRE_CARPETA_APP = "Incidencias";
+    private static final String NOMBRE_CARPETA_APP = "Incidencias_OS";
     private static final String ARCHIVO_CONFIG_JSON = "Config.json";
     private static final String ARCHIVO_CONFIG_TXT = "datos_incidencia.txt";
 
