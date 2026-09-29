@@ -284,8 +284,8 @@ jobs:
           [Desktop Entry]
           Version=1.0
           Type=Application
-          Name=Registro de Incidencias
-          Comment=Gestor de incidencias del IES Teis
+          Name=Gestor de Incidencias OpenSource
+          Comment=Gestor de incidencias OpenSource del IES Teis
           Exec=incidencias
           Icon=icon
           Terminal=false
