@@ -80,7 +80,7 @@ Cada incidencia enviada se registra en `historial_incidencias.sql` (carpeta de d
 
 ## Actualizaciones
 
-`UpdateService` comprueba al arrancar si hay una versión más nueva en la ruta de red interna `Z:\incidencias` (ficheros `Incidencia_<versión>.jar|.exe|.AppImage`). Si la ruta no existe, la comprobación se ignora sin error.
+`UpdateService` comprueba al arrancar si hay una versión más nueva en la ruta de red interna `Z:\incidencias` (ficheros `Incidencia_<versión>-OpenSource.jar|.exe|.AppImage`). Si la ruta no existe, la comprobación se ignora sin error.
 
 ## Compilación
 
