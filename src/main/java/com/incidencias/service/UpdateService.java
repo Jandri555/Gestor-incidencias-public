@@ -163,7 +163,7 @@ public class UpdateService {
         }
 
         String version = nombre.substring(PREFIJO.length(), nombre.length() - extension.length());
-        if (!version.matches("\\d+(\\.\\d+)*")) {
+        if (!version.matches("\\d+(\\.\\d+)*(?:-[A-Za-z0-9]+)?")) {
             return null;
         }
         return version;
@@ -171,8 +171,11 @@ public class UpdateService {
 
     private static boolean esVersionMasNueva(String candidata, String actual) {
         try {
-            String[] partesCandidata = candidata.trim().split("\\.");
-            String[] partesActual = actual.trim().split("\\.");
+            String candidataBase = candidata.trim().split("-", 2)[0];
+            String actualBase = actual.trim().split("-", 2)[0];
+
+            String[] partesCandidata = candidataBase.split("\\.");
+            String[] partesActual = actualBase.split("\\.");
             int longitud = Math.max(partesCandidata.length, partesActual.length);
 
             for (int i = 0; i < longitud; i++) {
