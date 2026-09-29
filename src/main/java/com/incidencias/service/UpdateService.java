@@ -163,9 +163,13 @@ public class UpdateService {
         }
 
         String version = nombre.substring(PREFIJO.length(), nombre.length() - extension.length());
-        if (!version.matches("\\d+(\\.\\d+)*(?:-[A-Za-z0-9]+)?")) {
+
+        // La edición OpenSource solo puede actualizarse desde paquetes
+        // cuyo nombre termine explícitamente en "-OpenSource".
+        if (!version.matches("\\d+(\\.\\d+)*-OpenSource")) {
             return null;
         }
+
         return version;
     }
 
