@@ -1,10 +1,10 @@
-# Gestor de Incidencias — v2.0 (edición pública)
+# Gestor de Incidencias OpenSource — v2.0-OpenSource
 
 > **⚠️ Aviso sobre esta edición pública**
 >
 > Tanto el código de esta edición pública como este README fueron **convertidos por completo por Claude** (IA de Anthropic) a partir de la versión privada del proyecto. **No han sido revisados en profundidad** por una persona: pueden contener errores, comportamientos distintos a los de la versión privada o fallos de seguridad. Además, la compilación con Maven y el funcionamiento con un almacén de credenciales real no se han comprobado tras la conversión. Úsalo bajo tu propia responsabilidad y revisa el código antes de usarlo con cuentas o datos reales.
 
-Aplicación de escritorio en Java (Swing) que rellena la plantilla oficial de incidencias (`Rexistro de incidencia.odt`), la convierte a PDF con LibreOffice y la envía por correo. Esta es la **edición pública del código fuente**: es una copia funcional de la versión completa, sin los secretos reales ni la parte privada de ofuscación.
+Aplicación de escritorio en Java (Swing) que rellena la plantilla oficial de incidencias (`Rexistro de incidencia.odt`), la convierte a PDF con LibreOffice y la envía por correo. Esta es la **edición OpenSource del código fuente**: es una copia funcional de la versión completa, sin los secretos reales ni la parte privada de ofuscación.
 
 ## Estructura
 
