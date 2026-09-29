@@ -23,7 +23,7 @@ public class IncidenciaView extends JFrame {
     private JLabel lblProgresoTexto;
 
     public IncidenciaView() {
-        super("Registro de Incidencias - v" + Version.NUMERO);
+        super(Version.NOMBRE + " - v" + Version.NUMERO);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(500, 650);
 
