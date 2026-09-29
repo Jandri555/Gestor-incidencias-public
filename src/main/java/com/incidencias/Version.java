@@ -7,7 +7,7 @@ public class Version {
      */
     public static final String NUMERO = "2.0-OpenSource";
 
-    public static final String NOMBRE = "Gestor de Incidencias OpenSource";
+    public static final String NOMBRE = "Gestor de Incidencias";
 
     public static boolean isModoDebug() {
         return false;
