@@ -61,7 +61,7 @@ La aplicación guarda las credenciales del usuario en el **almacén de credencia
 
 ### Cuenta oficial y cuenta remitente
 
-`informatica.ies.teis@edu.xunta.gal` es la cuenta oficial del centro y **solo actúa como destinatario** de las incidencias: no se puede usar para enviar. Su contraseña real no se publica.
+`informatica.ies.teis@edu.xunta.gal` es la cuenta que recibe las incidencias. 
 
 La edición pública **no tiene cuenta remitente por defecto**. Para enviar hay que pulsar **«Iniciar Sesión»** y entrar con una cuenta propia (SMTP con contraseña de aplicación, o Google). Sin sesión iniciada, la aplicación lo indica y no envía nada.
 
