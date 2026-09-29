@@ -120,114 +120,7 @@
             </plugin>
 
             <!-- ========================================================
-                 2. ProGuard (genera el JAR público y el JAR _deb)
-                 ======================================================== -->
-            <plugin>
-                <groupId>com.github.wvengen</groupId>
-                <artifactId>proguard-maven-plugin</artifactId>
-                <version>2.7.0</version>
-
-                <executions>
-                    <!-- Compilación pública -->
-                    <execution>
-                        <id>proguard-public</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>proguard</goal>
-                        </goals>
-                        <configuration>
-                            <injar>${project.build.finalName}-jar-with-dependencies.jar</injar>
-                            <outjar>Incidencia_${app.version}.jar</outjar>
-                        </configuration>
-                    </execution>
-
-                    <!-- Compilación debug (_deb) -->
-                    <execution>
-                        <id>proguard-debug</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>proguard</goal>
-                        </goals>
-                        <configuration>
-                            <injar>${project.build.finalName}-deb-jar-with-dependencies.jar</injar>
-                            <outjar>Incidencia_${app.version}_deb.jar</outjar>
-                        </configuration>
-                    </execution>
-                </executions>
-
-                <dependencies>
-
-                    <dependency>
-                        <groupId>com.guardsquare</groupId>
-                        <artifactId>proguard-base</artifactId>
-                        <version>7.9.1</version>
-                        <scope>runtime</scope>
-                    </dependency>
-
-                    <dependency>
-                        <groupId>com.guardsquare</groupId>
-                        <artifactId>proguard-core</artifactId>
-                        <version>9.3.2</version>
-                        <scope>runtime</scope>
-                    </dependency>
-
-                </dependencies>
-
-                <configuration>
-
-                    <inFilter>
-                        !META-INF/versions/**,!module-info.class
-                    </inFilter>
-
-                    <obfuscate>true</obfuscate>
-
-                    <!-- JDK que está usando Maven -->
-                    <libs>
-                        <lib>${java.home}/jmods/java.base.jmod</lib>
-                        <lib>${java.home}/jmods/java.desktop.jmod</lib>
-                        <lib>${java.home}/jmods/java.naming.jmod</lib>
-                        <lib>${java.home}/jmods/java.logging.jmod</lib>
-                    </libs>
-
-                    <options>
-
-                        <option>
-                            -keep public class com.incidencias.Main {
-                            public static void main(java.lang.String[]);
-                            }
-                        </option>
-
-                        <option>-keepattributes *</option>
-
-                        <!-- JNA -->
-                        <option>-keep class com.sun.jna.** { *; }</option>
-
-                        <option>
-                            -keepclassmembers class * extends com.sun.jna.Structure {
-                            *;
-                            }
-                        </option>
-
-                        <!-- Ofuscar únicamente tu código -->
-                        <option>-keep class !com.incidencias.** { *; }</option>
-                        <option>-keep interface !com.incidencias.** { *; }</option>
-                        <option>-keep enum !com.incidencias.** { *; }</option>
-
-                        <option>-dontwarn **</option>
-                        <option>-dontnote **</option>
-                        <option>-ignorewarnings</option>
-
-                        <option>-dontoptimize</option>
-                        <option>-dontshrink</option>
-
-                    </options>
-
-                </configuration>
-
-            </plugin>
-
-            <!-- ========================================================
-                 3. Crear EXE con Launch4j (empaqueta solo el JAR público)
+                 2. Crear EXE con Launch4j (empaqueta el JAR público)
                  ======================================================== -->
             <plugin>
                 <groupId>com.akathist.maven.plugins.launch4j</groupId>
@@ -323,7 +216,7 @@
             </plugin>
 
             <!-- ========================================================
-                 4. Leer la versión (validate), preparar el JAR debug
+                 3. Leer la versión (validate), preparar el JAR debug
                     (prepare-package) y limpiar intermedios (package)
                  ======================================================== -->
             <plugin>
@@ -398,6 +291,24 @@
                             </target>
                         </configuration>
 
+                    </execution>
+
+                    <execution>
+                        <id>crear-jar-publico</id>
+                        <phase>prepare-package</phase>
+
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+
+                        <configuration>
+                            <target>
+                                <copy
+                                    file="${project.build.directory}/${project.build.finalName}-jar-with-dependencies.jar"
+                                    tofile="${project.build.directory}/Incidencia_${app.version}.jar"
+                                    overwrite="true" />
+                            </target>
+                        </configuration>
                     </execution>
 
                     <execution>
