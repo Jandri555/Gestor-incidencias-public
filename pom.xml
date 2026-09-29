@@ -269,7 +269,7 @@
                             <versionInfo>
 
                                 <fileVersion>
-                                    ${app.version}.0.0
+                                    ${app.version.numeric}.0.0
                                 </fileVersion>
 
                                 <txtFileVersion>
@@ -277,7 +277,7 @@
                                 </txtFileVersion>
 
                                 <fileDescription>
-                                    Gestor de Incidencias
+                                    Gestor de Incidencias OpenSource
                                 </fileDescription>
 
                                 <copyright>
@@ -285,7 +285,7 @@
                                 </copyright>
 
                                 <productVersion>
-                                    ${app.version}.0.0
+                                    ${app.version.numeric}.0.0
                                 </productVersion>
 
                                 <txtProductVersion>
@@ -293,7 +293,7 @@
                                 </txtProductVersion>
 
                                 <productName>
-                                    Incidencias
+                                    Gestor de Incidencias OpenSource
                                 </productName>
 
                                 <internalName>
@@ -356,7 +356,31 @@
 
                                 </loadfile>
 
+                                
+                                <loadfile
+                                    property="app.version.numeric"
+                                    srcFile="${project.basedir}/src/main/java/com/incidencias/Version.java"
+                                    encoding="UTF-8">
+
+                                    <filterchain>
+                                        <tokenfilter>
+
+                                            <filetokenizer />
+
+                                            <replaceregex
+                                                pattern='(?s).*NUMERO\s*=\s*"([0-9]+(?:\.[0-9]+)*)(?:-[^"]+)?".*'
+                                                replace="\1" />
+
+                                        </tokenfilter>
+                                    </filterchain>
+
+                                </loadfile>
+
                                 <fail
+                                    unless="app.version.numeric"
+                                    message="ERROR: No se ha podido obtener la versión numérica desde Version.java" />
+
+<fail
                                     unless="app.version"
                                     message="ERROR: No se ha podido obtener la versión desde Version.java" />
 
