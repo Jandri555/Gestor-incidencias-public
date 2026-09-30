@@ -22,7 +22,7 @@
             <version>3.7.2</version>
         </dependency>
 
-        <!-- Jakarta Mail 2.1 + Angus: reemplaza el antiguo javax.mail. -->
+        <!-- Jakarta Mail 2.1 + Angus: migración desde la API antigua. -->
         <dependency>
             <groupId>jakarta.mail</groupId>
             <artifactId>jakarta.mail-api</artifactId>
