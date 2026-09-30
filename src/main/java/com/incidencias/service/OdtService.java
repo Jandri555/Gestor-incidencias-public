@@ -3,6 +3,7 @@ package com.incidencias.service;
 import com.incidencias.utils.LoggerUtil;
 import com.incidencias.view.IncidenciaView;
 
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
