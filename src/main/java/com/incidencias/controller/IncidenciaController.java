@@ -251,7 +251,7 @@ public class IncidenciaController {
                 "Se abrirá tu navegador para iniciar sesión con Google.\nCompleta el proceso allí y vuelve a esta ventana.",
                 "Iniciar sesión con Google", JOptionPane.INFORMATION_MESSAGE);
 
-        new Thread(() -> {
+        Thread.startVirtualThread(() -> {
             try {
                 GoogleAuthService.ResultadoAuth auth = GoogleAuthService.iniciarFlujoOAuth();
                 LoggerUtil.log("OAUTH", "Autorización OAuth completada con éxito para la cuenta: " + auth.correo);
@@ -279,7 +279,7 @@ public class IncidenciaController {
                             "Error", JOptionPane.ERROR_MESSAGE);
                 });
             }
-        }, "GoogleAuthThread").start();
+        });
     }
 
     private void onGenerarIncidencia() {
@@ -395,7 +395,7 @@ public class IncidenciaController {
                                 correoEnvio, destinatario, smtpHost, smtpPuerto, smtpSSL, esOAuth));
 
                         publish("Enviando correo con PDF adjunto...");
-                        MailService.enviarCorreoSMTP(archivoPdfTemporal.toString(), correoEnvio, passEnvioChars,
+                        MailService.enviarCorreoSMTP(archivoPdfTemporal, correoEnvio, passEnvioChars,
                                 destinatario,
                                 asunto, smtpHost, smtpPuerto, smtpSSL, esOAuth, esCuentaPorDefecto);
 

@@ -3,7 +3,10 @@ package com.incidencias.service;
 import com.incidencias.utils.LoggerUtil;
 import com.incidencias.view.IncidenciaView;
 
-import java.io.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,8 +14,10 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -20,6 +25,8 @@ import java.util.zip.ZipOutputStream;
 public class OdtService {
 
     private static final String PLANTILLA_ODT = "Rexistro de incidencia.odt";
+    private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter FORMATO_HORA = DateTimeFormatter.ofPattern("HH:mm");
 
     public static boolean existeLibreOffice() {
         if (com.incidencias.utils.FailureSimulator.isSimularFaltaLibreOffice()) {
@@ -29,8 +36,8 @@ public class OdtService {
 
         List<String> candidatos = obtenerCandidatosLibreOffice();
         for (String ejecutable : candidatos) {
-            if (ejecutable.contains(File.separator)) {
-                boolean existe = new File(ejecutable).exists();
+            if (esRutaExplicita(ejecutable)) {
+                boolean existe = Files.isRegularFile(Path.of(ejecutable));
                 LoggerUtil.log("LIBREOFFICE", "Comprobando ruta absoluta '" + ejecutable + "' -> existe=" + existe);
                 if (existe) {
                     return true;
@@ -67,7 +74,7 @@ public class OdtService {
 
     public static void generarPDFDesdeODT(Path rutaOdtTemporal, Path rutaPdfSalida, IncidenciaView vista)
             throws IOException {
-        generarNuevoODT(rutaOdtTemporal.toString(), vista);
+        generarNuevoODT(rutaOdtTemporal, vista);
         LoggerUtil.log("ODT", "Archivo ODT temporal generado: " + rutaOdtTemporal + " ("
                 + Files.size(rutaOdtTemporal) + " bytes)");
 
@@ -79,16 +86,16 @@ public class OdtService {
                 + Files.size(rutaPdfSalida) + " bytes)");
     }
 
-    public static void generarNuevoODT(String archivoSalida, IncidenciaView vista) throws IOException {
-        String fechaActual = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-        String horaActual = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
+    public static void generarNuevoODT(Path archivoSalida, IncidenciaView vista) throws IOException {
+        String fechaActual = LocalDate.now().format(FORMATO_FECHA);
+        String horaActual = LocalTime.now().format(FORMATO_HORA);
 
         InputStream is = OdtService.class.getResourceAsStream("/" + PLANTILLA_ODT);
         if (is == null)
             throw new FileNotFoundException("No se encontró la plantilla ODT dentro del JAR.");
 
         try (ZipInputStream zis = new ZipInputStream(is);
-                ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(archivoSalida))) {
+                ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(archivoSalida))) {
 
             ZipEntry entrada;
             while ((entrada = zis.getNextEntry()) != null) {
@@ -137,7 +144,7 @@ public class OdtService {
         String urlPerfil = perfilUsuarioTmp.toUri().toString();
 
         for (String ejecutable : candidatos) {
-            if (ejecutable.contains(File.separator) && !new File(ejecutable).exists()) {
+            if (esRutaExplicita(ejecutable) && !Files.isRegularFile(Path.of(ejecutable))) {
                 continue;
             }
 
@@ -152,7 +159,7 @@ public class OdtService {
 
                 LoggerUtil.log("LIBREOFFICE", "Ejecutando comando: " + String.join(" ", pb.command()));
                 pb.redirectErrorStream(true);
-                long t0 = System.currentTimeMillis();
+                long t0 = System.nanoTime();
                 Process proceso = pb.start();
 
                 try (BufferedReader br = new BufferedReader(
@@ -164,14 +171,14 @@ public class OdtService {
                 }
 
                 boolean terminado = proceso.waitFor(30, TimeUnit.SECONDS);
-                long duracion = System.currentTimeMillis() - t0;
+                long duracion = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t0);
                 LoggerUtil.log("LIBREOFFICE", "Proceso finalizado: terminado=" + terminado
                         + ", exitCode=" + (terminado ? proceso.exitValue() : "TIMEOUT") + ", tiempo=" + duracion
                         + "ms");
 
                 if (terminado && proceso.exitValue() == 0 && Files.exists(rutaPdfEsperada)
                         && Files.size(rutaPdfEsperada) > 0) {
-                    borrarDirectorioRecursivo(perfilUsuarioTmp.toFile());
+                    borrarDirectorioRecursivo(perfilUsuarioTmp);
                     return true;
                 }
             } catch (Exception ex) {
@@ -179,7 +186,7 @@ public class OdtService {
             }
         }
 
-        borrarDirectorioRecursivo(perfilUsuarioTmp.toFile());
+        borrarDirectorioRecursivo(perfilUsuarioTmp);
         return false;
     }
 
@@ -194,18 +201,24 @@ public class OdtService {
                 .replace("'", "&apos;");
     }
 
-    private static void borrarDirectorioRecursivo(File dir) {
-        if (dir == null || !dir.exists())
+    private static boolean esRutaExplicita(String ejecutable) {
+        return ejecutable.indexOf('/') >= 0 || ejecutable.indexOf('\\') >= 0;
+    }
+
+    private static void borrarDirectorioRecursivo(Path dir) {
+        if (dir == null || !Files.exists(dir)) {
             return;
-        File[] archivos = dir.listFiles();
-        if (archivos != null) {
-            for (File f : archivos) {
-                if (f.isDirectory())
-                    borrarDirectorioRecursivo(f);
-                else
-                    f.delete();
-            }
         }
-        dir.delete();
+        try (Stream<Path> rutas = Files.walk(dir)) {
+            rutas.sorted(Comparator.reverseOrder()).forEach(ruta -> {
+                try {
+                    Files.deleteIfExists(ruta);
+                } catch (IOException ignored) {
+                    // Limpieza best-effort del perfil temporal de LibreOffice.
+                }
+            });
+        } catch (IOException ignored) {
+            // Limpieza best-effort.
+        }
     }
 }

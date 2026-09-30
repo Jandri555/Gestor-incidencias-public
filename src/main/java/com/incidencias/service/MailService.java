@@ -3,21 +3,22 @@ package com.incidencias.service;
 import com.incidencias.Version;
 import com.incidencias.utils.LoggerUtil;
 
-import javax.activation.DataHandler;
-import javax.activation.DataSource;
-import javax.activation.FileDataSource;
-import javax.mail.*;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-import java.io.File;
+import jakarta.activation.DataHandler;
+import jakarta.activation.DataSource;
+import jakarta.activation.FileDataSource;
+import jakarta.mail.*;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
 import java.net.InetAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 
 public class MailService {
 
-    public static void enviarCorreoSMTP(String rutaArchivo, String correoEnvio, char[] credencial,
+    public static void enviarCorreoSMTP(Path rutaArchivo, String correoEnvio, char[] credencial,
             String destinatario, String asunto,
             String smtpHost, int smtpPort, boolean usarSSL, boolean esOAuth,
             boolean incluirInfoSistema) throws Exception {
@@ -42,8 +43,7 @@ public class MailService {
             props.put("mail.smtp.auth.mechanisms", "XOAUTH2");
         } else if (usarSSL) {
             props.put("mail.smtp.ssl.enable", "true");
-            props.put("mail.smtp.socketFactory.port", String.valueOf(smtpPort));
-            props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+            // Jakarta Mail ya gestiona la SSL directa mediante mail.smtp.ssl.enable.
         } else {
             props.put("mail.smtp.starttls.enable", "true");
         }
@@ -91,14 +91,13 @@ public class MailService {
             textoCuerpo.setText("");
         }
 
-        File adjuntoFile = new File(rutaArchivo);
         LoggerUtil.log("SMTP",
-                "Adjuntando archivo: " + adjuntoFile.getAbsolutePath() + " (" + adjuntoFile.length() + " bytes)");
+                "Adjuntando archivo: " + rutaArchivo.toAbsolutePath() + " (" + Files.size(rutaArchivo) + " bytes)");
 
         BodyPart archivoAdjunto = new MimeBodyPart();
-        DataSource fuente = new FileDataSource(rutaArchivo);
+        DataSource fuente = new FileDataSource(rutaArchivo.toFile());
         archivoAdjunto.setDataHandler(new DataHandler(fuente));
-        archivoAdjunto.setFileName(adjuntoFile.getName());
+        archivoAdjunto.setFileName(rutaArchivo.getFileName().toString());
 
         Multipart multipart = new MimeMultipart();
         multipart.addBodyPart(textoCuerpo);
