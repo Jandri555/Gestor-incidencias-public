@@ -33,7 +33,7 @@ public final class SonidoService {
             Player player = new Player(new BufferedInputStream(in));
             actual = player;
 
-            Thread hilo = new Thread(() -> {
+            Thread.startVirtualThread(() -> {
                 try {
                     player.play();
                 } catch (Exception e) {
@@ -46,9 +46,7 @@ public final class SonidoService {
                         }
                     }
                 }
-            }, "sonido-tema");
-            hilo.setDaemon(true); // no impide que la aplicación se cierre
-            hilo.start();
+            });
         } catch (Exception e) {
             LoggerUtil.error("SONIDO", "No se pudo iniciar la reproducción de " + recurso, e);
         }

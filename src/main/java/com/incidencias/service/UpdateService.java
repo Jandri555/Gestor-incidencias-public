@@ -5,15 +5,20 @@ import com.incidencias.utils.LoggerUtil;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.Stream;
 
 public class UpdateService {
 
-    private static final String RUTA_ACTUALIZACIONES = "Z:\\incidencias";
+    private static final Path RUTA_ACTUALIZACIONES = Path.of("Z:\\incidencias");
     private static final String PREFIJO = "Incidencia_";
 
     public static void comprobarActualizaciones(Component parentComponent) {
-        new Thread(() -> {
+        Thread.startVirtualThread(() -> {
             try {
                 TipoDistribucion tipo = detectarDistribucion();
                 LoggerUtil.log("UPDATE", "Formato de distribución detectado: " + tipo.descripcion);
@@ -22,17 +27,20 @@ public class UpdateService {
                     return;
                 }
 
-                File carpeta = new File(RUTA_ACTUALIZACIONES);
-                LoggerUtil.log("UPDATE", "Comprobando directorio de red: " + carpeta.getAbsolutePath()
-                        + " (existe=" + carpeta.isDirectory() + ")");
-                if (!carpeta.isDirectory()) {
+                LoggerUtil.log("UPDATE", "Comprobando directorio de red: " + RUTA_ACTUALIZACIONES.toAbsolutePath()
+                        + " (existe=" + Files.isDirectory(RUTA_ACTUALIZACIONES) + ")");
+                if (!Files.isDirectory(RUTA_ACTUALIZACIONES)) {
                     return;
                 }
 
-                File[] archivos = carpeta.listFiles(
-                        (dir, nombre) -> esArchivoDelTipo(nombre, tipo));
+                List<Path> archivos;
+                try (Stream<Path> stream = Files.list(RUTA_ACTUALIZACIONES)) {
+                    archivos = stream
+                            .filter(path -> esArchivoDelTipo(path.getFileName().toString(), tipo))
+                            .toList();
+                }
 
-                if (archivos == null || archivos.length == 0) {
+                if (archivos.isEmpty()) {
                     LoggerUtil.log("UPDATE",
                             "No se encontraron paquetes del tipo " + tipo.descripcion + " en " + RUTA_ACTUALIZACIONES);
                     return;
@@ -41,10 +49,11 @@ public class UpdateService {
                 String mejorVersion = Version.NUMERO;
                 String mejorArchivo = null;
 
-                for (File archivo : archivos) {
-                    String version = extraerVersion(archivo.getName(), tipo);
+                for (Path archivo : archivos) {
+                    String nombreArchivo = archivo.getFileName().toString();
+                    String version = extraerVersion(nombreArchivo, tipo);
                     LoggerUtil.log("UPDATE",
-                            "Analizando archivo '" + archivo.getName() + "' -> versión extraída: " + version);
+                            "Analizando archivo '" + nombreArchivo + "' -> versión extraída: " + version);
 
                     if (version == null) {
                         continue;
@@ -52,12 +61,12 @@ public class UpdateService {
 
                     if (esVersionMasNueva(version, mejorVersion)) {
                         mejorVersion = version;
-                        mejorArchivo = archivo.getName();
+                        mejorArchivo = archivo.getFileName().toString();
                     }
                 }
 
                 if (mejorArchivo != null) {
-                    String rutaFinal = RUTA_ACTUALIZACIONES + File.separator + mejorArchivo;
+                    Path rutaFinal = RUTA_ACTUALIZACIONES.resolve(mejorArchivo);
                     String versionFinal = mejorVersion;
                     LoggerUtil.log("UPDATE", "Nueva actualización encontrada: v" + versionFinal + " en " + rutaFinal);
 
@@ -83,7 +92,7 @@ public class UpdateService {
             } catch (Exception ex) {
                 LoggerUtil.error("UPDATE", "Error comprobando actualizaciones", ex);
             }
-        }, "ComprobadorActualizaciones").start();
+        });
     }
 
     private static TipoDistribucion detectarDistribucion() {
@@ -100,20 +109,25 @@ public class UpdateService {
         }
 
         try {
-            String ubicacion = UpdateService.class
+            URI ubicacion = UpdateService.class
                     .getProtectionDomain()
                     .getCodeSource()
                     .getLocation()
-                    .getPath()
-                    .toLowerCase();
+                    .toURI();
 
-            if (ubicacion.endsWith(".jar")) {
-                return TipoDistribucion.JAR;
+            if ("file".equalsIgnoreCase(ubicacion.getScheme())) {
+                Path ruta = Path.of(ubicacion);
+                String nombre = ruta.getFileName() != null
+                        ? ruta.getFileName().toString().toLowerCase(Locale.ROOT)
+                        : "";
+                if (Files.isRegularFile(ruta) && nombre.endsWith(".jar")) {
+                    return TipoDistribucion.JAR;
+                }
             }
         } catch (Exception ignored) {
         }
 
-        String classPath = System.getProperty("java.class.path", "").toLowerCase();
+        String classPath = System.getProperty("java.class.path", "").toLowerCase(Locale.ROOT);
         if (classPath.contains(".jar")) {
             return TipoDistribucion.JAR;
         }
@@ -122,43 +136,34 @@ public class UpdateService {
     }
 
     private static boolean esArchivoDelTipo(String nombre, TipoDistribucion tipo) {
-        String n = nombre.toLowerCase();
-        String prefijo = PREFIJO.toLowerCase();
+        String n = nombre.toLowerCase(Locale.ROOT);
+        String prefijo = PREFIJO.toLowerCase(Locale.ROOT);
 
         if (!n.startsWith(prefijo)) {
             return false;
         }
 
-        switch (tipo) {
-            case JAR:
-                return n.endsWith(".jar");
-            case EXE:
-                return n.endsWith(".exe");
-            case APPIMAGE:
-                return n.endsWith(".appimage");
-            default:
-                return false;
-        }
+        return switch (tipo) {
+            case JAR -> n.endsWith(".jar");
+            case EXE -> n.endsWith(".exe");
+            case APPIMAGE -> n.endsWith(".appimage");
+            case DESCONOCIDA -> false;
+        };
     }
 
     private static String extraerVersion(String nombre, TipoDistribucion tipo) {
-        String extension;
-        switch (tipo) {
-            case JAR:
-                extension = ".jar";
-                break;
-            case EXE:
-                extension = ".exe";
-                break;
-            case APPIMAGE:
-                extension = ".appimage";
-                break;
-            default:
-                return null;
+        String extension = switch (tipo) {
+            case JAR -> ".jar";
+            case EXE -> ".exe";
+            case APPIMAGE -> ".appimage";
+            case DESCONOCIDA -> null;
+        };
+        if (extension == null) {
+            return null;
         }
 
-        String nombreMinusculas = nombre.toLowerCase();
-        if (!nombreMinusculas.startsWith(PREFIJO.toLowerCase()) || !nombreMinusculas.endsWith(extension)) {
+        String nombreMinusculas = nombre.toLowerCase(Locale.ROOT);
+        if (!nombreMinusculas.startsWith(PREFIJO.toLowerCase(Locale.ROOT)) || !nombreMinusculas.endsWith(extension)) {
             return null;
         }
 

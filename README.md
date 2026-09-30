@@ -1,4 +1,4 @@
-# Gestor de Incidencias — v2.1-OpenSource
+# Gestor de Incidencias — v2.2-OpenSource
 
 > **⚠️ Aviso sobre esta edición pública**
 >

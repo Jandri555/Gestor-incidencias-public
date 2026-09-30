@@ -7,7 +7,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
@@ -18,12 +17,12 @@ import com.incidencias.model.ConfiguracionPublica;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.time.Duration;
 import java.util.List;
 
 public class GoogleAuthService {
@@ -36,9 +35,15 @@ public class GoogleAuthService {
         return ConfiguracionPublica.obtenerGoogleClientSecret();
     }
 
-    private static final List<String> SCOPES = Arrays.asList(
-            "https://mail.google.com/", "https://www.googleapis.com/auth/userinfo.email", "openid");
+    private static final List<String> SCOPES = List.of(
+            "https://mail.google.com/",
+            "https://www.googleapis.com/auth/userinfo.email",
+            "openid");
     private static final String CARPETA_TOKENS_TEMPORAL = "tokens_google_tmp";
+    private static final URI URI_USERINFO = URI.create("https://www.googleapis.com/oauth2/v3/userinfo");
+    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(15))
+            .build();
 
     public static class ResultadoAuth {
         public String correo;
@@ -46,7 +51,7 @@ public class GoogleAuthService {
     }
 
     public static ResultadoAuth iniciarFlujoOAuth() throws Exception {
-        NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+        NetHttpTransport httpTransport = new NetHttpTransport.Builder().build();
         GsonFactory jsonFactory = GsonFactory.getDefaultInstance();
         GoogleClientSecrets.Details detalles = new GoogleClientSecrets.Details();
         detalles.setClientId(obtenerClientId());
@@ -82,24 +87,38 @@ public class GoogleAuthService {
 
     public static String obtenerAccessToken(String refreshToken)
             throws IOException, java.security.GeneralSecurityException {
-        NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+        NetHttpTransport httpTransport = new NetHttpTransport.Builder().build();
         GoogleTokenResponse response = new GoogleRefreshTokenRequest(
                 httpTransport, GsonFactory.getDefaultInstance(), refreshToken,
                 obtenerClientId(), obtenerClientSecret()).execute();
         return response.getAccessToken();
     }
 
-    private static String obtenerCorreoDesdeAccessToken(String accessToken) throws IOException {
-        URL url = new URL("https://www.googleapis.com/oauth2/v3/userinfo");
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setRequestProperty("Authorization", "Bearer " + accessToken);
-        con.setConnectTimeout(15000);
-        con.setReadTimeout(15000);
-        try (InputStream is = con.getInputStream();
-                InputStreamReader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
-            JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
-            return json.has("email") ? json.get("email").getAsString() : "";
+    private static String obtenerCorreoDesdeAccessToken(String accessToken)
+            throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(URI_USERINFO)
+                .timeout(Duration.ofSeconds(15))
+                .header("Authorization", "Bearer " + accessToken)
+                .GET()
+                .build();
+
+        final HttpResponse<String> response;
+        try {
+            response = HTTP_CLIENT.send(
+                    request,
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw ex;
         }
+
+        if (response.statusCode() / 100 != 2) {
+            throw new IOException(
+                    "Google devolvió HTTP " + response.statusCode() + " al consultar la cuenta.");
+        }
+
+        JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
+        return json.has("email") ? json.get("email").getAsString() : "";
     }
 
     private static void borrarCarpetaTemporal(File carpeta) {
