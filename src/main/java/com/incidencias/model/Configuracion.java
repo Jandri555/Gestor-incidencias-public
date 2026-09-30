@@ -5,11 +5,15 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 import com.incidencias.Version;
 import com.incidencias.service.CryptoService;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
+@Getter
+@Setter
 public class Configuracion {
 
     private static final String NOMBRE_CARPETA_APP = "Incidencias_OS";
@@ -178,75 +182,11 @@ public class Configuracion {
                 : "";
     }
 
-    public boolean isFirstRun() {
-        return firstRun;
-    }
-
-    public void setFirstRun(boolean firstRun) {
-        this.firstRun = firstRun;
-    }
-
     public void borrarCredenciales() {
         this.correoUsuario = "";
         this.passwordReferencia = "";
         this.metodoAutenticacion = "PASSWORD";
         this.googleRefreshTokenReferencia = "";
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public void setVersion(String version) {
-        this.version = version;
-    }
-
-    public String getCurso() {
-        return curso;
-    }
-
-    public void setCurso(String curso) {
-        this.curso = curso;
-    }
-
-    public String getTaller() {
-        return taller;
-    }
-
-    public void setTaller(String taller) {
-        this.taller = taller;
-    }
-
-    public String getEquipo() {
-        return equipo;
-    }
-
-    public void setEquipo(String equipo) {
-        this.equipo = equipo;
-    }
-
-    public String getAlumno() {
-        return alumno;
-    }
-
-    public void setAlumno(String alumno) {
-        this.alumno = alumno;
-    }
-
-    public String getCorreoUsuario() {
-        return correoUsuario;
-    }
-
-    public void setCorreoUsuario(String correoUsuario) {
-        this.correoUsuario = correoUsuario;
-    }
-
-    public String getPasswordReferencia() {
-        return passwordReferencia;
-    }
-
-    public void setPasswordReferencia(String passwordReferencia) {
-        this.passwordReferencia = passwordReferencia;
     }
 
     public boolean isModoDebugActivado() {
@@ -265,52 +205,12 @@ public class Configuracion {
         }
     }
 
-    public String getMetodoAutenticacion() {
-        return metodoAutenticacion;
-    }
-
-    public void setMetodoAutenticacion(String metodoAutenticacion) {
-        this.metodoAutenticacion = metodoAutenticacion;
-    }
-
-    public String getSmtpHost() {
-        return smtpHost;
-    }
-
-    public void setSmtpHost(String smtpHost) {
-        this.smtpHost = smtpHost;
-    }
-
-    public String getSmtpPuerto() {
-        return smtpPuerto;
-    }
-
-    public void setSmtpPuerto(String smtpPuerto) {
-        this.smtpPuerto = smtpPuerto;
-    }
-
     public String getTema() {
         return tema;
     }
 
     public void setTema(String tema) {
         this.tema = (tema != null && !tema.isBlank()) ? tema : "AUTO";
-    }
-
-    public boolean isSonidoUrss() {
-        return sonidoUrss;
-    }
-
-    public void setSonidoUrss(boolean sonidoUrss) {
-        this.sonidoUrss = sonidoUrss;
-    }
-
-    public boolean isSmtpSSL() {
-        return smtpSSL;
-    }
-
-    public void setSmtpSSL(boolean smtpSSL) {
-        this.smtpSSL = smtpSSL;
     }
 
     public String getGoogleRefreshTokenReferencia() {
