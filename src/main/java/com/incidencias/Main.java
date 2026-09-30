@@ -8,7 +8,6 @@ import com.incidencias.view.IncidenciaView;
 import com.incidencias.view.TemaUI;
 import com.incidencias.view.TemaUI.Tema;
 
-import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import java.lang.management.ManagementFactory;
 import java.util.List;
@@ -49,17 +48,6 @@ public class Main {
                         + " (sistema en modo oscuro: " + TemaUI.sistemaEnModoOscuro() + ")");
             }
             LoggerUtil.log("INIT", "Configuracion cargada desde disco.");
-
-            boolean mostrarAvisoPrimeraEjecucion = modelo.isFirstRun();
-            if (mostrarAvisoPrimeraEjecucion) {
-                JOptionPane.showMessageDialog(null,
-                        "Atención: Esta aplicación no es del centro, si el programa falla de alguna manera no mandes una incidencia sobre ello.\n\n"
-                                + "En su lugar avísame a mí (Alejandro Silva) =).",
-                        "Aviso importante",
-                        JOptionPane.WARNING_MESSAGE);
-                modelo.setFirstRun(false);
-                modelo.guardarDatos();
-            }
 
             LoggerUtil.log("INIT", "Construyendo ventana principal IncidenciaView...");
             IncidenciaView vista = new IncidenciaView();
