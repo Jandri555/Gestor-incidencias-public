@@ -7,7 +7,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
@@ -52,7 +51,7 @@ public class GoogleAuthService {
     }
 
     public static ResultadoAuth iniciarFlujoOAuth() throws Exception {
-        NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+        NetHttpTransport httpTransport = new NetHttpTransport.Builder().build();
         GsonFactory jsonFactory = GsonFactory.getDefaultInstance();
         GoogleClientSecrets.Details detalles = new GoogleClientSecrets.Details();
         detalles.setClientId(obtenerClientId());
@@ -88,7 +87,7 @@ public class GoogleAuthService {
 
     public static String obtenerAccessToken(String refreshToken)
             throws IOException, java.security.GeneralSecurityException {
-        NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+        NetHttpTransport httpTransport = new NetHttpTransport.Builder().build();
         GoogleTokenResponse response = new GoogleRefreshTokenRequest(
                 httpTransport, GsonFactory.getDefaultInstance(), refreshToken,
                 obtenerClientId(), obtenerClientSecret()).execute();
