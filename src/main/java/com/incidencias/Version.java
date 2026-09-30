@@ -5,7 +5,7 @@ public class Version {
      * Versión de la edición pública. El sufijo forma parte de la versión visible
      * y también de los nombres de los paquetes generados.
      */
-    public static final String NUMERO = "2.1-OpenSource";
+    public static final String NUMERO = "2.2-OpenSource";
 
     public static final String NOMBRE = "Gestor de Incidencias";
 
