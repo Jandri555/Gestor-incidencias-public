@@ -53,6 +53,15 @@
         </dependency>
 
         <!-- ====================================================================
+             Reproducción de MP3 (sonido del tema URSS). Licencia LGPL.
+             ==================================================================== -->
+        <dependency>
+            <groupId>javazoom</groupId>
+            <artifactId>jlayer</artifactId>
+            <version>1.0.1</version>
+        </dependency>
+
+        <!-- ====================================================================
              Login con Google (OAuth 2.0) sin contraseña de aplicación
              ==================================================================== -->
         <dependency>

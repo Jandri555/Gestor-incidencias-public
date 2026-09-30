@@ -12,7 +12,10 @@ import com.incidencias.service.UpdateService;
 import com.incidencias.utils.LoggerUtil;
 import com.incidencias.view.ConfigDialogResult;
 import com.incidencias.view.IncidenciaView;
+import com.incidencias.service.SonidoService;
 import com.incidencias.view.SmtpConfigResult;
+import com.incidencias.view.TemaUI;
+import com.incidencias.view.TemaUI.Tema;
 
 import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
@@ -109,7 +112,8 @@ public class IncidenciaController {
 
         SmtpConfigResult r = vista.mostrarDialogoAjustesSmtp(
                 modelo.getSmtpHost(), modelo.getSmtpPuerto(), modelo.isSmtpSSL(),
-                modelo.isModoDebugActivado(), modelo.getCorreoDestinoDebug());
+                modelo.isModoDebugActivado(), modelo.getCorreoDestinoDebug(),
+                Tema.desdeNombre(modelo.getTema()), modelo.isSonidoUrss());
 
         if (r != null && r.guardado) {
             LoggerUtil.log("AJUSTES", String.format(
@@ -134,7 +138,28 @@ public class IncidenciaController {
             if (modelo.isModoDebugActivado()) {
                 modelo.setCorreoDestinoDebug(r.debugEmail);
             }
+            Tema temaAnterior = Tema.desdeNombre(modelo.getTema());
+            boolean sonabaAntes = (temaAnterior == Tema.URSS) && modelo.isSonidoUrss();
+            Tema temaNuevo = Tema.desdeNombre(r.tema);
+            modelo.setTema(temaNuevo.name());
+            modelo.setSonidoUrss(r.sonidoUrss);
             modelo.guardarDatos();
+
+            // En AUTO se vuelve a aplicar siempre, por si el sistema ha cambiado de modo desde el arranque
+            if (temaNuevo != temaAnterior || temaNuevo == Tema.AUTO) {
+                LoggerUtil.log("AJUSTES", "Aplicando tema de la interfaz: " + temaNuevo.name());
+                TemaUI.aplicarYRefrescar(temaNuevo);
+                vista.actualizarIdentidadTema(temaNuevo);
+            }
+
+            // Sonido del tema URSS: suena al entrar en URSS o al marcar «Sonido»; se corta al salir o desmarcarlo
+            boolean suenaAhora = (temaNuevo == Tema.URSS) && modelo.isSonidoUrss();
+            if (suenaAhora && !sonabaAntes) {
+                SonidoService.reproducir(TemaUI.RECURSO_SONIDO_URSS);
+            } else if (!suenaAhora) {
+                SonidoService.detener();
+            }
+            // Repinta la barra de estado: su color se fija a mano y el cambio de tema lo restablece
             actualizarUI();
             vista.mostrarMensaje("Ajustes guardados.", "Ajustes", JOptionPane.INFORMATION_MESSAGE);
         } else {

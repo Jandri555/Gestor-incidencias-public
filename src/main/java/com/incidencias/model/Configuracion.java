@@ -91,6 +91,14 @@ public class Configuracion {
     @SerializedName("smtp_ssl")
     private boolean smtpSSL = true;
 
+    // Tema de la interfaz: AUTO, CLARO, OSCURO o URSS (ver TemaUI.Tema)
+    @SerializedName("tema")
+    private String tema = "AUTO";
+
+    // Si el tema URSS reproduce URSS.mp3 (activado por defecto)
+    @SerializedName("sonido_urss")
+    private boolean sonidoUrss = true;
+
     // Referencia al almacén de credenciales del sistema ("KEYRING:saved"); nunca el token real.
     @SerializedName("google_refresh_token")
     private String googleRefreshTokenReferencia = "";
@@ -164,6 +172,8 @@ public class Configuracion {
         this.smtpHost = (origen.smtpHost != null && !origen.smtpHost.isEmpty()) ? origen.smtpHost : "smtp.gmail.com";
         this.smtpPuerto = (origen.smtpPuerto != null && !origen.smtpPuerto.isEmpty()) ? origen.smtpPuerto : "465";
         this.smtpSSL = origen.smtpSSL;
+        this.tema = (origen.tema != null && !origen.tema.isBlank()) ? origen.tema : "AUTO";
+        this.sonidoUrss = origen.sonidoUrss;
         this.googleRefreshTokenReferencia = (origen.googleRefreshTokenReferencia != null) ? origen.googleRefreshTokenReferencia
                 : "";
     }
@@ -277,6 +287,22 @@ public class Configuracion {
 
     public void setSmtpPuerto(String smtpPuerto) {
         this.smtpPuerto = smtpPuerto;
+    }
+
+    public String getTema() {
+        return tema;
+    }
+
+    public void setTema(String tema) {
+        this.tema = (tema != null && !tema.isBlank()) ? tema : "AUTO";
+    }
+
+    public boolean isSonidoUrss() {
+        return sonidoUrss;
+    }
+
+    public void setSonidoUrss(boolean sonidoUrss) {
+        this.sonidoUrss = sonidoUrss;
     }
 
     public boolean isSmtpSSL() {

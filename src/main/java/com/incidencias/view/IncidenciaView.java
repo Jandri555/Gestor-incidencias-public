@@ -4,13 +4,16 @@ import com.incidencias.Version;
 import com.incidencias.service.HistorialService.RegistroIncidencia;
 import com.incidencias.utils.FailureSimulator;
 import com.formdev.flatlaf.FlatClientProperties;
+import com.incidencias.view.TemaUI.Tema;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.MouseEvent;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 public class IncidenciaView extends JFrame {
 
@@ -22,6 +25,12 @@ public class IncidenciaView extends JFrame {
     private JDialog dialogoProgreso;
     private JLabel lblProgresoTexto;
 
+    private Tema temaActual = Tema.AUTO;
+
+    private Image iconoPorDefecto;
+    private Image iconoUrss;
+    private boolean iconoUrssIntentado;
+
     public IncidenciaView() {
         super(Version.NOMBRE + " - v" + Version.NUMERO);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -29,7 +38,8 @@ public class IncidenciaView extends JFrame {
 
         java.net.URL urlIcono = getClass().getResource("/icon.png");
         if (urlIcono != null) {
-            setIconImage(new ImageIcon(urlIcono).getImage());
+            iconoPorDefecto = new ImageIcon(urlIcono).getImage();
+            setIconImage(iconoPorDefecto);
         } else {
             System.err.println("No se encontró el archivo icon.png en resources.");
         }
@@ -65,10 +75,12 @@ public class IncidenciaView extends JFrame {
         txtProblema.setLineWrap(true);
         txtProblema.setWrapStyleWord(true);
 
+        // El margen va en un panel aparte para que el JScrollPane conserve su borde propio
+        // y este se actualice al cambiar de tema (un borde copiado a mano se quedaría fijo).
         JScrollPane scrollProblema = new JScrollPane(txtProblema);
-        scrollProblema.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createEmptyBorder(0, 25, 10, 25),
-                UIManager.getBorder("ScrollPane.border")));
+        JPanel panelProblema = new JPanel(new BorderLayout());
+        panelProblema.setBorder(BorderFactory.createEmptyBorder(0, 25, 10, 25));
+        panelProblema.add(scrollProblema, BorderLayout.CENTER);
 
         JPanel panelInferior = new JPanel(new BorderLayout(0, 12));
         panelInferior.setBorder(BorderFactory.createEmptyBorder(10, 25, 20, 25));
@@ -97,12 +109,54 @@ public class IncidenciaView extends JFrame {
 
         JPanel panelCentro = new JPanel(new BorderLayout());
         panelCentro.add(panelForm, BorderLayout.NORTH);
-        panelCentro.add(scrollProblema, BorderLayout.CENTER);
+        panelCentro.add(panelProblema, BorderLayout.CENTER);
 
         add(panelCentro, BorderLayout.CENTER);
         add(panelInferior, BorderLayout.SOUTH);
 
         setLocationRelativeTo(null);
+    }
+
+    /**
+     * Ajusta título y logo de la ventana al tema activo. Con el tema URSS el título es
+     * «Nuestro gestor de incidencias» (con su símbolo) y el logo es URSS.png; si ese
+     * recurso no existe, se conserva el logo normal.
+     */
+    public void actualizarIdentidadTema(Tema tema) {
+        temaActual = tema;
+        boolean urss = (tema == Tema.URSS);
+
+        // El botón principal solo toma el fondo del botón «por defecto»; con URSS (fondo dorado y
+        // letra dorada) el texto no se vería, así que ahí se le da también su color de letra.
+        btnGenerar.putClientProperty(FlatClientProperties.STYLE, urss
+                ? "background: $Button.default.background; foreground: $Button.default.foreground"
+                : "background: $Button.default.background");
+
+        String titulo = (urss ? TemaUI.NOMBRE_URSS : Version.NOMBRE) + " - v" + Version.NUMERO;
+        setTitle(urss ? titulo + TemaUI.simboloUrss() : titulo);
+
+        Image icono = (urss && cargarIconoUrss() != null) ? iconoUrss : iconoPorDefecto;
+        if (icono != null) {
+            setIconImage(icono);
+        }
+    }
+
+    private Image cargarIconoUrss() {
+        if (!iconoUrssIntentado) {
+            iconoUrssIntentado = true;
+            java.net.URL url = getClass().getResource(TemaUI.RECURSO_ICONO_URSS);
+            if (url != null) {
+                Image img = new ImageIcon(url).getImage();
+                if (img != null && img.getWidth(null) > 0) {
+                    iconoUrss = img;
+                }
+            }
+            if (iconoUrss == null) {
+                System.err.println("No se encontró " + TemaUI.RECURSO_ICONO_URSS
+                        + " en resources: se mantiene el logo normal.");
+            }
+        }
+        return iconoUrss;
     }
 
     public void actualizarEtiquetaEstado(String correoUsuario, String correoPublico, String metodoAutenticacion,
@@ -118,7 +172,8 @@ public class IncidenciaView extends JFrame {
 
         if (debugActivado) {
             estado += " | [MODO DEBUG]";
-            lblEstadoCorreo.setForeground(new Color(220, 53, 69));
+            // Con URSS el rojo habitual se pierde sobre el fondo rojo: se usa un rosa claro
+            lblEstadoCorreo.setForeground(temaActual == Tema.URSS ? new Color(255, 170, 160) : new Color(220, 53, 69));
         } else {
             lblEstadoCorreo.setForeground(UIManager.getColor("Label.disabledForeground"));
         }
@@ -358,7 +413,7 @@ public class IncidenciaView extends JFrame {
     }
 
     public SmtpConfigResult mostrarDialogoAjustesSmtp(String hostActual, String puertoActual, boolean sslActual,
-            boolean modoDebugActual, String debugEmailActual) {
+            boolean modoDebugActual, String debugEmailActual, Tema temaActual, boolean sonidoUrssActual) {
 
         JTextField txtHost = new JTextField(hostActual);
         JTextField txtPuerto = new JTextField(puertoActual);
@@ -368,6 +423,30 @@ public class IncidenciaView extends JFrame {
         JButton btnPanelTest = null;
 
         JPanel panel = new JPanel(new GridLayout(0, 1, 5, 5));
+        // Selector de tema: un botón de radio por tema; la casilla «Sonido» va junto a URSS
+        // y solo se puede tocar cuando URSS es el tema elegido.
+        JCheckBox chkSonido = new JCheckBox("Sonido", sonidoUrssActual);
+        chkSonido.setEnabled(temaActual == Tema.URSS);
+        ButtonGroup grupoTemas = new ButtonGroup();
+        Map<Tema, JRadioButton> radiosTema = new EnumMap<>(Tema.class);
+
+        panel.add(new JLabel("Tema de la interfaz:"));
+        for (Tema t : Tema.values()) {
+            JRadioButton radio = new JRadioButton(t.toString(), t == temaActual);
+            grupoTemas.add(radio);
+            radiosTema.put(t, radio);
+            radio.addActionListener(e -> chkSonido.setEnabled(radiosTema.get(Tema.URSS).isSelected()));
+
+            if (t == Tema.URSS) {
+                JPanel filaUrss = new JPanel(new BorderLayout(15, 0));
+                filaUrss.add(radio, BorderLayout.WEST);
+                filaUrss.add(chkSonido, BorderLayout.CENTER);
+                panel.add(filaUrss);
+            } else {
+                panel.add(radio);
+            }
+        }
+        panel.add(new JLabel(" "));
         panel.add(new JLabel("Servidor SMTP por defecto:"));
         panel.add(txtHost);
         panel.add(new JLabel("Puerto:"));
@@ -396,6 +475,14 @@ public class IncidenciaView extends JFrame {
         result.host = txtHost.getText().trim();
         result.puerto = txtPuerto.getText().trim();
         result.ssl = chkSSL.isSelected();
+        Tema temaElegido = temaActual;
+        for (Map.Entry<Tema, JRadioButton> e : radiosTema.entrySet()) {
+            if (e.getValue().isSelected()) {
+                temaElegido = e.getKey();
+            }
+        }
+        result.tema = temaElegido.name();
+        result.sonidoUrss = chkSonido.isSelected();
         result.debugEmail = (modoDebugActual && txtDebugEmail != null)
                 ? txtDebugEmail.getText().trim()
                 : debugEmailActual;
