@@ -1,6 +1,6 @@
 # Gestor de Incidencias — v2.2-OpenSource
 
-Aplicación de escritorio en Java (Swing) que rellena la plantilla oficial de incidencias (`Rexistro de incidencia.odt`), la convierte a PDF con LibreOffice y la envía por correo. Esta es la **edición OpenSource del código fuente**: es una copia funcional de la versión completa, sin los secretos reales ni la parte privada de ofuscación.
+Aplicación de escritorio en Java (Swing) que rellena la plantilla oficial de incidencias (`Rexistro de incidencia.odt`), la convierte a PDF con LibreOffice y la envía por correo. Esta es la **edición OpenSource del código fuente**: es una copia funcional de la versión cerrada, sin los secretos reales ni la parte privada de ofuscación.
 
 ## Estructura
 
