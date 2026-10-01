@@ -76,42 +76,7 @@ Ver `.env.example`.
 | `GOOGLE_CLIENT_ID` | Client ID de tu proyecto OAuth (para «Iniciar sesión con Google») |
 | `GOOGLE_CLIENT_SECRET` | Client secret de tu proyecto OAuth |
 
-## Temas de la interfaz
 
-En **Ajustes → Tema de la interfaz** se puede elegir entre:
-
-| Tema | Descripción |
-| --- | --- |
-| Automático | Sigue el modo claro/oscuro del sistema (Windows y macOS; en Linux queda en claro) |
-| Claro | Siempre claro |
-| Oscuro | Siempre oscuro |
-| URSS | Rojo bandera con letras y acentos dorados; el título pasa a «Nuestro gestor de incidencias», cambia el logo y puede sonar una música |
-
-El cambio se aplica al pulsar **Guardar**, sin reiniciar. La elección se guarda en `Config.json`:
-
-```json
-{
-  "tema": "URSS",
-  "sonido_urss": true
-}
-```
-
-`tema` admite `AUTO`, `CLARO`, `OSCURO` o `URSS` (si falta o no es válido, se usa Automático).
-
-### Tema URSS: logo y sonido
-
-Junto a la opción URSS hay una casilla **Sonido**, marcada por defecto (solo se puede cambiar cuando URSS es el tema elegido). El sonido suena una vez al cambiar a URSS, al marcar la casilla y al arrancar la aplicación con ese tema; se corta al cambiar de tema o desmarcarla.
-
-Los archivos se colocan en `src/main/resources/`:
-
-| Archivo | Uso |
-| --- | --- |
-| `URSS.png` | Logo de la ventana y de la barra de tareas con el tema URSS (Swing no lee `.ico`) |
-| `URSS.mp3` | Sonido del tema URSS (se reproduce con [JLayer](https://github.com/umjammer/jlayer), LGPL) |
-
-Ambos son opcionales: si no existen, la aplicación conserva el logo normal y no reproduce nada, sin dar error. El icono del `.exe` (`icon.ico`) lo fija Launch4j al compilar y no cambia con el tema.
-
-Las paletas están en `TemaUI` y se aplican con `FlatLaf.setGlobalExtraDefaults(...)`, así que para retocar colores o añadir un tema nuevo basta con tocar esa clase.
 
 ## Historial de incidencias
 
