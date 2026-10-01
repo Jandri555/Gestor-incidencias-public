@@ -18,12 +18,12 @@ src/main/java/com/incidencias/
 │   ├── Configuracion.java
 │   └── ConfiguracionPublica.java
 ├── service/
-│   ├── CryptoService.java        (solo integración con el keyring)
+│   ├── CryptoService.java
 │   ├── GoogleAuthService.java
 │   ├── HistorialService.java
 │   ├── MailService.java
 │   ├── OdtService.java
-│   ├── SonidoService.java        (reproduce el MP3 del tema URSS)
+│   ├── SonidoService.java
 │   └── UpdateService.java
 ├── utils/
 │   ├── FailureSimulator.java
@@ -32,8 +32,8 @@ src/main/java/com/incidencias/
     ├── ConfigDialogResult.java
     ├── IncidenciaView.java
     ├── SmtpConfigResult.java
-    └── TemaUI.java               (temas de la interfaz)
-src/main/resources/  (Rexistro de incidencia.odt, icon.png, y opcionalmente URSS.png y URSS.mp3)
+    └── TemaUI.java
+src/main/resources/
 icon.ico
 pom.xml
 .github/workflows/compilar.yml
